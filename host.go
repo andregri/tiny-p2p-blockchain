@@ -39,6 +39,17 @@ func main() {
 
 	peerChan := peer.InitMdns(host, "rendesvouz")
 
+	go func() {
+		if len(blockchain.Blockchain) < 1 {
+			genesis := blockchain.GenerateGenesisBlock()
+			blockchain.Blockchain = append(blockchain.Blockchain, genesis)
+		}
+		lastBlockIndex := len(blockchain.Blockchain) - 1
+		oldBlock := blockchain.Blockchain[lastBlockIndex]
+		block, _ := blockchain.GenerateBlock(oldBlock, 2)
+		blockChannel <- block
+	}()
+
 	for {
 		peer := <-peerChan // will block untill we discover a peer
 		fmt.Println("Found peer:", peer, ", connecting")
