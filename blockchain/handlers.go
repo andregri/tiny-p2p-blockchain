@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"log"
 	"sync"
+	"time"
 )
 
 // Synchronize functions that add new blocks
 var mutex = &sync.Mutex{}
 
 func WriteBlockchain(rw *bufio.ReadWriter, blockChannel <-chan Block) {
+	go broadcastChain(rw)
+
 	for {
 		// Wait a new block
 		newBlock := <-blockChannel
@@ -71,5 +74,22 @@ func ReadBlockchain(rw *bufio.ReadWriter) {
 
 			mutex.Unlock()
 		}
+	}
+}
+
+func broadcastChain(rw *bufio.ReadWriter) {
+	for {
+		time.Sleep(5 * time.Second)
+		mutex.Lock()
+		bytes, err := json.Marshal(Blockchain)
+		if err != nil {
+			log.Println(err)
+		}
+		mutex.Unlock()
+
+		mutex.Lock()
+		rw.WriteString(fmt.Sprintf("%s\n", string(bytes)))
+		rw.Flush()
+		mutex.Unlock()
 	}
 }

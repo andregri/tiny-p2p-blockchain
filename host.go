@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/andregri/tiny-p2p-blockchain/blockchain"
 	"github.com/andregri/tiny-p2p-blockchain/peer"
@@ -37,19 +39,20 @@ func main() {
 
 	fmt.Printf("\n[*] Your Multiaddress Is: /ip4/%s/tcp/%v/p2p/%s\n", *listenAddr, *listenPort, host.ID().Pretty())
 
+	// Discover new peers
 	peerChan := peer.InitMdns(host, "rendesvouz")
 
+	// Add genesis block if chain is empty
 	go func() {
 		if len(blockchain.Blockchain) < 1 {
 			genesis := blockchain.GenerateGenesisBlock()
 			blockchain.Blockchain = append(blockchain.Blockchain, genesis)
 		}
-		lastBlockIndex := len(blockchain.Blockchain) - 1
-		oldBlock := blockchain.Blockchain[lastBlockIndex]
-		block, _ := blockchain.GenerateBlock(oldBlock, 2)
-		blockChannel <- block
+
+		generateRandomBlocks()
 	}()
 
+	// Connect to new peers
 	for {
 		peer := <-peerChan // will block untill we discover a peer
 		fmt.Println("Found peer:", peer, ", connecting")
@@ -83,4 +86,24 @@ func handleStream(stream network.Stream) {
 	go blockchain.ReadBlockchain(rw)
 
 	// 'stream' will stay open until you close it (or the other side closes it).
+}
+
+func generateRandomBlocks() {
+	for {
+		// Sleep for a random time
+		sleepTime := rand.Intn(20) + 10
+		time.Sleep(time.Duration(sleepTime) * time.Second)
+
+		// Generate a new block
+		amount := rand.Intn(1000)
+		lastBlockIndex := len(blockchain.Blockchain) - 1
+		oldBlock := blockchain.Blockchain[lastBlockIndex]
+		block, err := blockchain.GenerateBlock(oldBlock, amount)
+		if err != nil {
+			log.Println(err)
+		}
+
+		log.Printf("Block %d generated\n", amount)
+		blockChannel <- block
+	}
 }
