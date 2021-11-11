@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/andregri/tiny-p2p-blockchain/api"
 	"github.com/andregri/tiny-p2p-blockchain/blockchain"
 	"github.com/andregri/tiny-p2p-blockchain/peer"
 	"github.com/libp2p/go-libp2p-core/network"
@@ -50,6 +51,11 @@ func main() {
 		}
 
 		generateRandomBlocks()
+	}()
+
+	// Start API
+	go func() {
+		api.Start(*listenPort + 100)
 	}()
 
 	// Connect to new peers
